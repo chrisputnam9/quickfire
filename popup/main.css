@@ -1,0 +1,73 @@
+/* Functional */
+[data-template] {
+    display: none;
+}
+
+/* General */
+body,html {
+    margin:0;
+    padding:0;
+    width: 500px;
+}
+input,button {
+    box-sizing: border-box;
+    height: 30px;
+    outline: 0;
+    border-radius: 10px;
+}
+input {
+    width: 100%;
+    padding: 10px;
+}
+p.error {
+    color: red;
+}
+
+/* Sections */
+.section {
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+.header, .footer {
+    background: #222;
+    color: #eee;
+}
+
+/* Header */
+
+.header h1 {
+    margin: 0;
+}
+
+.header input {
+    float: left;
+    width: 80%;
+    border-radius: 10px 0 0 10px;
+    border: 0;
+}
+
+.header button {
+    width: 20%;
+    border-radius: 0 10px 10px 0;
+    border: none;
+    background-color: #666;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+}
+.header button:hover {
+    background-color: #efefef;
+    color: #222;
+    cursor: pointer;
+}
+
+/* Main */
+.main {
+    min-height: 150px;
+    max-height: 350px;
+    overflow: auto;
+}
+.main input {
+    margin-bottom: 10px;
+}

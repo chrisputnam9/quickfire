@@ -1,0 +1,15 @@
+{
+    "name": "Basecamp Classic QuickFire",
+    "version": "0.1",
+    "description": "Add features to Basecamp Classic",
+    "permissions": [
+        "https://*.basecamphq.com/*",
+        "https://*.37signals.com/*",
+        "storage"
+    ],
+    "browser_action": {
+      "default_popup": "popup/index.html"
+    },
+
+    "manifest_version": 2
+}

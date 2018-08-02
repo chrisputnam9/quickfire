@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BaseCamp QuickFire</title>
+    <link rel="stylesheet" type="text/css" href="main.css" />
+</head>
+<body>
+
+    <div class='header section' data-view='header'>
+        <script type='text/template' data-template='default'>
+            {{{html}}}
+        </script>
+        <script type='text/template' data-template='search'>
+            <input type='text' id='search' value='' placeholder='Search'>
+            <button id='refresh'>&#10227;</button>
+        </script>
+    </div>
+    <div class='main section' data-view='main'>
+
+        <script type='text/template' data-template='default'>
+            {{{html}}}
+        </script>
+
+        <script type='text/template' data-template='config'>
+            {{#error}}
+            <p class='error'>{{{error}}}</p>
+            {{/error}}
+            <label for='url'>Enter Your Basecamp Classic URL</label>
+            <input type='text' id='url' placeholder='example.basecamphq.com' value='{{url}}' />
+            <br>
+            <button id='continue'>Continue</button>
+        </script>
+
+        <script type='text/template' data-template='projects'>
+            {{#projects}}
+                <a target='_blank' href='{{url}}'>{{name}}</a><br>
+            {{/projects}}
+        </script>
+
+    </div>
+    <!--
+    <div class='footer section'>
+        <a href=''>
+    </div>
+    -->
+
+    <script src='../vendor/js/jquery.min.js'></script>
+    <script src='../vendor/js/mustache.min.js'></script>
+
+    <script src='main.js'></script>
+    <script src='js/data.js'></script>
+    <script src='js/view-model.js'></script>
+</body>
+</html>
