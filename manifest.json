@@ -1,14 +1,24 @@
 {
-    "name": "Basecamp Classic QuickFire",
-    "version": "0.1",
+    "name": "QuickFire for Basecamp Classic",
+    "version": "0.2",
     "description": "Add features to Basecamp Classic",
+    "icons": {
+        "16": "img/logo_16.png",
+        "32": "img/logo_32.png",
+        "64": "img/logo_64.png",
+        "128": "img/logo_128.png",
+        "256": "img/logo_256.png",
+        "512": "img/logo_512.png",
+        "1024": "img/logo_1024.png"
+    },
     "permissions": [
         "https://*.basecamphq.com/*",
         "https://*.37signals.com/*",
         "storage"
     ],
     "browser_action": {
-      "default_popup": "popup/index.html"
+        "default_popup": "popup/index.html",
+        "default_title": "QuickFire for Basecamp Classic"
     },
 
     "manifest_version": 2

@@ -17,6 +17,7 @@ APP.Main = {
 
     view: null,
     header_view: null,
+    footer_view: null,
 
     search_value: "",
     search_timer: null,
@@ -25,9 +26,29 @@ APP.Main = {
     init: function () {
         var self = this;
 
+        // Remove focus styling after any buttonish item is clicked
+        $('html').on('click', 'a.button, a.col, button', function () { $(this).blur(); });
+
         // Set up views
         self.view = new APP.ViewModel($('[data-view="main"]'));
         self.header_view = new APP.ViewModel($('[data-view="header"]'));
+        self.footer_view = new APP.ViewModel($('[data-view="footer"]'));
+
+        // Set up events on views
+        self.view.addAction('show-projects', self.showProjects);
+        self.view.addAction('show-project-todo-lists', self.showProjectTodoLists);
+        self.view.addAction('save-config', self.saveConfig);
+        self.header_view.addAction('refresh', self.refresh);
+        self.header_view.addAction('search', function (event) {
+            window.e = event;
+            self.search_value = $(event.target).val();
+            clearTimeout(self.search_timer);
+            self.search_timer = setTimeout(self.search, APP.Config.debounce);
+        });
+        self.footer_view.addAction('settings', self.showConfig);
+
+        // Initial Rendering
+        self.footer_view.render('menu');
 
         // Load config data
         chrome.storage.local.get(['config'], function (data) {
@@ -55,7 +76,7 @@ APP.Main = {
                     return;
                 }
 
-                self.showList();
+                self.showProjects();
                 return;
             }
 
@@ -64,33 +85,35 @@ APP.Main = {
         });
     },
 
-    showConfig: function (data) {
+    showConfig: function () {
         var self = APP.Main;
+
         self.header_view.render({html:'<h1>Settings</h1>'});
-        self.view.render(data, 'config');
-        self.view.$el.find('#continue').on('click', self.saveConfig);
+        self.view.render(APP.Config, 'config');
     },
 
     showConfigError: function (specific) {
-        specific = (typeof specific == 'undefined') ? '' : specific + '. ';
-        APP.Main.showConfig({
-            error: specific + 'Double-check URL, and make sure you are logged in',
-            url: APP.Config.url
-        });
+        specific = (typeof specific == 'undefined') ? '' : specific + '.<br>';
+        APP.Config.error = specific + 'Double-check URL, and make sure you are currently logged in.<br>If issues persist, <a href="https://github.com/chrisputnam9/quickfire/blob/master/README.md" target="_blank">click here for help.</a>';
+        APP.Main.showConfig();
+        delete APP.Config.error;
     },
 
-    saveConfig: function () {
+    saveConfig: function (event) {
         var self = APP.Main,
-            url = $('#url').val(),
+            url = $('[name="url"]').val(),
             matches = url.match(/(^|\s|\/)([^\/]+\.[^\/]+\.([^\/]+)?)(\/|$|\s)/);
+
+        event.preventDefault();
+        self.view.render({html:'Saving...'});
 
         if (matches) {
             url = matches[2];
         } else {
-            showConfig({error: 'Invalid URL, please try again'});
+            self.showConfigError('Invalid URL, "'+url+'", please try again');
+            return;
         }
 
-        console.log('Saving URL: ' + url);
         APP.Config.url = url;
         chrome.storage.local.set({config: APP.Config});
 
@@ -104,55 +127,80 @@ APP.Main = {
                 return;
             }
 
-            console.log('Saving User ID: ' + user_id);
             APP.Config.user_id = user_id;
             chrome.storage.local.set({config: APP.Config});
 
             $.get('https://' + url + '/people/' + user_id + '/edit')
             .done( function (html) {
                 var api_key = $(html).find('#token').html();
-                if (api_key == '') {
+                if (api_key == '' || api_key == undefined) {
                     self.showConfigError('Unable to get Basecamp API key');
                     return;
                 }
 
-                console.log('Saving API Key: ' + api_key);
                 APP.Config.api_key = api_key;
                 chrome.storage.local.set({config: APP.Config});
 
-                self.showList();
+                self.refresh();
+                self.showProjects();
+            })
+            .error(function (jqXHR, status, error) {
+                APP.Main.showConfigError('Unable to get Basecamp API key');
             });
 
+        })
+        .error(function (jqXHR, status, error) {
+            APP.Main.showConfigError('Unable to get Basecamp user id');
         });
     },
 
-    showList: function () {
+    // Show Project Listing
+    showProjects: function (event) {
         var self = APP.Main;
 
         self.header_view.render('search');
+        self.header_view.$el.find('[name="search"]').focus();
 
         // Focus on load
-        var $search = $('#search');
+        var $search = $('[name="search"]');
         $search.focus();
-        $search.on('input', function () {
-            self.search_value = $(this).val();
-            clearTimeout(self.search_timer);
-            self.search_timer = setTimeout(self.search, APP.Config.debounce);
-        });
-
-        // refresh button click action
-        $('#refresh').on('click', self.refresh);
 
         // Initial loading of data
-        self.load();
+        self.loadProjects();
     },
 
-    // Load data - check cache, then refresh if empty or old
-    load: function () {
+    // Show Project Listing
+    showProjectTodoLists: function (event) {
+        var self = APP.Main,
+            $target = $(event.target),
+            project_id = $target.data('id');
+
+        if (typeof project_id == 'undefined') {
+            $target = $target.closest('[data-id]');
+            project_id = $target.data('id');
+        }
+
+        self.header_view.render('search');
+        self.header_view.$el.find('[name="search"]').focus();
+
+        // Initial loading of data
+        self.loadProjectTodoLists(project_id);
+    },
+
+    // Load projects
+    loadProjects: function () {
         var self = APP.Main;
 
         self.view.renderLoading();
         APP.Data.get('projects', self.view.render);
+    },
+
+    // Load project todo lists
+    loadProjectTodoLists: function (id) {
+        var self = APP.Main;
+
+        self.view.renderLoading();
+        APP.Data.getById('project-todo-lists', self.view.render, id);
     },
 
     // Refresh data - via Ajax
@@ -160,6 +208,9 @@ APP.Main = {
         var self = APP.Main;
 
         self.view.renderLoading();
+
+        APP.Data.clear('projects');
+        APP.Data.clear('project-todo-lists');
 
         APP.Data.fetch('projects', self.view.render);
     },

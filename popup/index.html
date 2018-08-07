@@ -8,14 +8,18 @@
 <body>
 
     <div class='header section' data-view='header'>
+
         <script type='text/template' data-template='default'>
             {{{html}}}
         </script>
+
         <script type='text/template' data-template='search'>
-            <input type='text' id='search' value='' placeholder='Search'>
-            <button id='refresh'>&#10227;</button>
+            <input type='text' name='search' data-input='js-search' value='' placeholder='Search'>
+            <button href='js-refresh'>&#10227;</button>
         </script>
+
     </div>
+
     <div class='main section' data-view='main'>
 
         <script type='text/template' data-template='default'>
@@ -26,24 +30,80 @@
             {{#error}}
             <p class='error'>{{{error}}}</p>
             {{/error}}
-            <label for='url'>Enter Your Basecamp Classic URL</label>
-            <input type='text' id='url' placeholder='example.basecamphq.com' value='{{url}}' />
-            <br>
-            <button id='continue'>Continue</button>
+            <form id='config' action='js-save-config'>
+                <label for='url'>Enter Your Basecamp Classic URL</label>
+                <input type='text' name='url' class='m-tp' placeholder='example.basecamphq.com' value='{{url}}' />
+                <div class='col t-rt'>
+                    <a class='button' href='js-show-projects' >Cancel</a>
+                    <button type='submit' >Save</button>
+                </div>
+            </form>
         </script>
 
         <script type='text/template' data-template='projects'>
             {{#projects}}
-                <a target='_blank' href='{{url}}'>{{name}}</a><br>
+            <div class='col m-bt'>
+                <a href='js-show-project-todo-lists' class='col col10 p-all t-ct' data-id="{{id}}"' title='Show Lists'>
+                    <div class='col t-xl'>&#9783;</div>
+                </a>
+                <a href='{{url}}' class='col col90 p-all' target='_blank' title='View Project in Basecamp'>
+                    <div class='col col75 t-xl'>{{name}}</div>
+
+                    <div class='col col25 t-sm t-rt'>
+                        <div class='col m-bt'>{{#company}}{{name}}{{/company}}</div>
+                        <div class='col'>{{created-on}}</div>
+                    </div>
+                </a><br>
+            </div>
             {{/projects}}
         </script>
 
+        <script type='text/template' data-template='project-todo-lists'>
+            {{#project}}
+            <div class='col m-bt'>
+                <a href='js-show-projects' class='col col10 p-all t-ct data-project="{{id}}" active' title='Back to Projects'>
+                    <div class='col t-xl active'>&#9783;</div>
+                </a>
+                <a href='{{url}}' class='col col90 p-all' target='_blank' title='View Project in Basecamp'>
+                    <div class='col col75 t-xl'>{{name}}</div>
+
+                    <div class='col col25 t-sm t-rt'>
+                        <div class='col m-bt'>{{#company}}{{name}}{{/company}}</div>
+                        <div class='col'>{{created-on}}</div>
+                    </div>
+                </a><br>
+            </div>
+            {{/project}}
+            {{#lists}}
+                <div class='col m-bt'>
+                    <div class='col col10 p-all'>&nbsp;</div>
+                    <a href='{{url}}' class='col col90 p-all {{#completed}}o-50{{/completed}}' target='_blank' title='View List in Basecamp'>
+                        <div class='col col75'>{{name}}</div>
+
+                        <div class='col col25 t-rt'>
+                            <div class='col'>{{uncompleted-count}}</div>
+                        </div>
+                    </a><br>
+                </div>
+            {{/lists}}
+        </script>
+
     </div>
-    <!--
-    <div class='footer section'>
-        <a href=''>
+
+    <div class='footer section' data-view='footer'>
+
+        <script type='text/template' data-template='default'>
+            {{{html}}}
+        </script>
+
+        <script type='text/template' data-template='menu'>
+            <div class='col t-rt'>
+                <a href='js-settings' class='button m-rt' target='_blank' title='Settings'>&#9991;</a>
+                <a href='https://github.com/chrisputnam9/quickfire/blob/master/README.md' class='button' target='_blank' title='Help'>?</a>
+            </div>
+        </script>
+        
     </div>
-    -->
 
     <script src='../vendor/js/jquery.min.js'></script>
     <script src='../vendor/js/mustache.min.js'></script>

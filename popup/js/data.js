@@ -3,6 +3,18 @@ APP.Data = {
     // Data from previous fetches
     data: {},
 
+    // Clear Data for a type
+    clear: function (type) {
+        var self = APP.Data,
+            type_created = type+'_created';
+
+        delete self.data[type];
+        delete self.data[type_created];
+
+        chrome.storage.local.remove(type);
+        chrome.storage.local.remove(type_created);
+    },
+
     // Get data of a given type, cache, then pass to callback
     get: function (type, callback) {
         var self = APP.Data,
@@ -15,7 +27,6 @@ APP.Data = {
 
             // and it hasn't expired
             if ( (now_stamp - self.data[type_created]) < APP.Config.cache_expire ) {
-                console.log('Using data from object');
                 callback(self.data, type);
                 return; // Stop before running more
             }
@@ -34,7 +45,6 @@ APP.Data = {
                     self.data[type] = data[type];
                     self.data[type_created] = data[type_created];
 
-                    console.log('Using data from storage');
                     callback(data, type);
                     return; // Stop before running more
                 }
@@ -46,30 +56,101 @@ APP.Data = {
         });
     },
 
+    // Get data of a given type, keyed by an ID, cache, then pass to callback
+    getById: function (type, callback, id) {
+        var self = APP.Data,
+            now = new Date(),
+            now_stamp = now.getTime(),
+            type_created = type+'_created';
+
+        // Update working data
+        if ( ! (type in self.data) ) {
+            self.data[type] = {};
+        }
+        if ( ! (type_created in self.data) ) {
+            self.data[type_created] = {};
+        }
+
+        // See if we already have data
+        if (
+            id in self.data[type]
+            && id in self.data[type_created]
+        ) {
+
+            // and it hasn't expired
+            if ( (now_stamp - self.data[type_created][id]) < APP.Config.cache_expire ) {
+                callback(self.data[type][id], type);
+                return; // Stop before running more
+            }
+        }
+
+        // Don't already have it, or it expired, so check storage
+        chrome.storage.local.get([type, type_created], function (data) {
+
+            // Make sure we have everything we should
+            if (
+                type in data
+                && type_created in data
+                && id in data[type]
+                && id in data[type_created]
+            ) {
+
+                // And it hasn't expired
+                if ( (now_stamp - data[type_created][id]) < APP.Config.cache_expire) {
+
+                    // Update our working data
+                    self.data[type][id] = data[type][id];
+                    self.data[type_created][id] = data[type_created][id];
+
+                    callback(self.data[type][id], type);
+                    return; // Stop before running more
+                }
+            }
+
+            // Storage incomplete or expired, fetch via Ajax
+            self.fetch(type, callback, {'id':id});
+
+        });
+    },
+
     // Fetch Methods for various types
-    fetch: function (type, callback) {
-        var self = APP.Data;
+    fetch: function (type, callback, params) {
+        var self = APP.Data,
+            type_created = type+'_created';
+
+        params = (typeof params == 'undefined') ? {} : params;
 
         $.ajax({
-            url: self.fetch_url[type](),
+            url: self.fetch_url[type](params),
             dataType: 'xml'
         })
-        .done(function(xml){
+        .done(function (xml) {
             var $xml = $(xml),
                 now = new Date(),
                 now_stamp = now.getTime();
 
-            type_data = self.fetch_parse[type]($xml);
+            type_data = self.fetch_parse[type]($xml, params);
 
-            // Update working data
-            self.data[type] = type_data;
-            self.data[type+'_created'] = now_stamp;
+            if ('id' in params) {
+                self.data[type][params.id] = type_data;
+                self.data[type_created][params.id] = now_stamp;
+            } else {
+                // Update working data
+                self.data[type] = type_data;
+                self.data[type_created] = now_stamp;
+            }
 
             // Update local storage
             chrome.storage.local.set(self.data);
 
-            console.log('Using data from ajax');
-            callback(self.data, type);
+            if ('id' in params) {
+                callback(self.data[type][params.id], type);
+            } else {
+                callback(self.data, type);
+            }
+        })
+        .error(function (jqXHR, status, error) {
+            APP.Main.showConfigError('Error fetching ' + type + ' - ' + error);
         });
 
     },
@@ -79,20 +160,27 @@ APP.Data = {
             _: function () {
                 return 'https://'+APP.Config.api_key+':X@'+APP.Config.url;
             },
-            projects: function () {
+            'projects': function () {
                 return APP.Data.fetch_url._()+'/projects.xml';
-            }
+            },
+            'project-todo-lists': function (params) {
+                if ( ! ('id' in params) ) {
+                    throw new Error('Missing ID - required to fetch project todo lists');
+                }
+                return APP.Data.fetch_url._()+'/projects/'+params.id+'/todo_lists.xml';
+            },
         },
 
         // Fetch/Ajax Data parsing for each type
         fetch_parse: {
-            projects: function ($xml) {
+            'projects': function ($xml) {
                 var self = APP.Data,
                     projects = [];
 
                 $xml.find('projects project').each(function () {
                     var $project = $(this),
-                        id = $project.find('id').html(),
+                        id = parseInt($project.find('id').html()),
+                        $company = $project.find('company'),
                         project = {
                             'id': id,
                             'url': 'https://'+APP.Config.url+'/projects/'+id,
@@ -101,14 +189,52 @@ APP.Data = {
                             'name': $project.find('name').html(),
                             'start-page': $project.find('start-page').html(),
                             'company': {
-                                'id': $project.find('id').html(),
-                                'name': $project.find('name').html()
+                                'id': parseInt($company.find('id').html()),
+                                'name': $company.find('name').html()
                             }
                         };
                     projects.push(project);
                 });
 
                 return projects;
+            },
+            'project-todo-lists': function ($xml, params) {
+                var self = APP.Data,
+                    lists = [],
+                    project_id;
+
+                if ( ! ('id' in params) ) {
+                    throw new Error('Missing ID - required to fetch project todo lists');
+                }
+
+                project_id = params.id;
+
+                $xml.find('todo-lists todo-list').each(function () {
+                    var $list = $(this),
+                        id = parseInt($list.find('id').html()),
+                        list = {
+                            'id': id,
+                            'url': 'https://'+APP.Config.url+'/todo_lists/'+id,
+                            'name': $list.find('name').html(),
+                            'description': $list.find('description').html(),
+                            'position': parseInt($list.find('position').html()),
+                            'completed': $list.find('completed').html() == 'true',
+                            'uncompleted-count': parseInt($list.find('uncompleted-count').html()),
+                            'completed-count': parseInt($list.find('completed-count').html()),
+                        };
+                    lists.push(list);
+                });
+
+                lists.sort(function (a,b) {
+                    if (a.completed && ! b.completed) return 1;
+                    if (b.completed && ! a.completed) return -1;
+                    return a.position - b.position;
+                });
+
+                return {
+                    'project': self.data['projects'].filter(function (project) { return project.id == project_id}),
+                    'lists': lists
+                };
             }
         },
 
@@ -123,8 +249,6 @@ APP.Data = {
         } else {
             search = search.toLowerCase();
         }
-
-        console.log('Filter: ' + search);
 
         self.get(type, function (data) {
             var type_data = data[type],
