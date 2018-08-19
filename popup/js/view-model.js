@@ -3,6 +3,7 @@ APP.ViewModel = function ($el) {
 
     instance.$el = $el;
     instance.exists = (instance.$el.length > 0);
+    instance.name;
 
     instance.actions = {};
     instance.listeners = {
@@ -15,12 +16,14 @@ APP.ViewModel = function ($el) {
     // - no args to render default, no data
     // - type arg only to render with no data
     instance.render = function (data, type) {
-
         data = (typeof data == 'undefined') ? {} : data;
 
         if (typeof type == 'undefined') {
             type = (typeof data == 'string') ? data : 'default';
         }
+
+        APP.log('Rendering "' + instance.name + '" view with template "' + type + '" and data:')
+        APP.log(data);
 
         if (type in instance.templates) {
             var html = Mustache.render(instance.templates[type], data);
@@ -51,9 +54,12 @@ APP.ViewModel = function ($el) {
     // Trigger an event
     instance.trigger = function (event, data) {
         if (event in instance.listeners) {
-            $.each(instance.listeners[event], function (l, callback) {
-                callback(data);
-            });
+            if (instance.listeners[event].length > 0) {
+                APP.log('Triggering "' + event + '" events in "' + instance.name + '" view');
+                $.each(instance.listeners[event], function (l, callback) {
+                    callback(data);
+                });
+            }
         } else {
             throw new Error('Invalid event - ' + event);
         }
@@ -70,9 +76,13 @@ APP.ViewModel = function ($el) {
     // Run set actions
     instance.runActions = function (target, event) {
         if (target in instance.actions) {
-            $.each(instance.actions[target], function (a, callback) {
-                callback(event);
-            });
+            if (instance.actions[target].length > 0) {
+                APP.logLine();
+                APP.log('Running "' + target + '" actions in "' + instance.name + '" view');
+                $.each(instance.actions[target], function (a, callback) {
+                    callback(event);
+                });
+            }
         }
     };
 
@@ -102,6 +112,8 @@ APP.ViewModel = function ($el) {
 
             instance.templates[name] = $template.eq(0).html();
         });
+
+        instance.name = instance.$el.data('view');
     }
 
     instance.renderLoading();

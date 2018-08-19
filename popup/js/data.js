@@ -50,8 +50,16 @@ APP.Data = {
                 }
             }
 
-            // Storage incomplete or expired, fetch via Ajax
-            self.fetch(type, callback);
+            if (APP.Debug.enable()) {
+                if (type in APP.Debug.data) {
+                    self.fetch_finalize(type, APP.Debug.data[type].slice(0), {}, callback);
+                }
+                else {
+                    throw new Error('Missing debug data - ' + type);
+                }
+            } else {
+                self.fetch(type, callback);
+            }
 
         });
     },
@@ -107,16 +115,24 @@ APP.Data = {
                 }
             }
 
-            // Storage incomplete or expired, fetch via Ajax
-            self.fetch(type, callback, {'id':id});
+            // Storage incomplete or expired, fetch via Ajax (or from debug data)
+            if (APP.Debug.enable()) {
+                if (type in APP.Debug.data && id in APP.Debug.data[type]) {
+                    self.fetch_finalize(type, Object.create(APP.Debug.data[type][id]), {'id':id}, callback);
+                }
+                else {
+                    throw new Error('Missing debug data - ' + type + ':' + id);
+                }
+            } else {
+                self.fetch(type, callback, {'id':id});
+            }
 
         });
     },
 
     // Fetch Methods for various types
     fetch: function (type, callback, params) {
-        var self = APP.Data,
-            type_created = type+'_created';
+        var self = APP.Data;
 
         params = (typeof params == 'undefined') ? {} : params;
 
@@ -125,11 +141,26 @@ APP.Data = {
             dataType: 'xml'
         })
         .done(function (xml) {
-            var $xml = $(xml),
+            var $xml = $(xml);
+
+            type_data = self.fetch_parse[type]($xml, params);
+
+            self.fetch_finalize(type, type_data, params, callback);
+        })
+        .error(function (jqXHR, status, error) {
+            APP.Main.showConfigError('Error fetching ' + type + ' - ' + error);
+        });
+
+    },
+
+        // Finalize - sort, save, callback for fetched data
+        fetch_finalize: function (type, type_data, params, callback) {
+            var self = APP.Data,
+                type_created = type+'_created';
                 now = new Date(),
                 now_stamp = now.getTime();
 
-            type_data = self.fetch_parse[type]($xml, params);
+            self.sort[type](type_data);
 
             if ('id' in params) {
                 self.data[type][params.id] = type_data;
@@ -148,12 +179,7 @@ APP.Data = {
             } else {
                 callback(self.data, type);
             }
-        })
-        .error(function (jqXHR, status, error) {
-            APP.Main.showConfigError('Error fetching ' + type + ' - ' + error);
-        });
-
-    },
+        },
 
         // Fetch/Ajax URLs for each type
         fetch_url: {
@@ -225,17 +251,38 @@ APP.Data = {
                     lists.push(list);
                 });
 
-                lists.sort(function (a,b) {
-                    if (a.completed && ! b.completed) return 1;
-                    if (b.completed && ! a.completed) return -1;
-                    return a.position - b.position;
-                });
-
                 return {
                     'project': self.data['projects'].filter(function (project) { return project.id == project_id}),
                     'lists': lists
                 };
             }
+        },
+
+        sort: {
+            'projects': function (data) {
+                APP.log('Sorting projects: ');
+                APP.log(data);
+
+                data.sort(function (a,b) {
+                    if (a.name < b.name) return -11;
+                    if (a.name > b.name) return 1;
+                    return 0;
+                });
+
+                return data;
+            },
+            'project-todo-lists': function (data) {
+                APP.log('Sorting project-todo-lists: ');
+                APP.log(data);
+
+                data.lists.sort(function (a,b) {
+                    if (a.completed && ! b.completed) return 1;
+                    if (b.completed && ! a.completed) return -1;
+                    return a.position - b.position;
+                });
+
+                return data;
+            },
         },
 
     // Filter data by search text
@@ -270,4 +317,4 @@ APP.Data = {
             callback(filtered_data, type);
         });
     },
-}
+};

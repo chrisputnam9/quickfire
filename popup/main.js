@@ -1,18 +1,5 @@
 APP = {};
 
-APP.Config = {
-
-    url: null,
-    user_id: null,
-    api_key: null,
-
-    debounce: 500, // time before acting on live input (eg. search)
-
-    // 1 Day (24*60*60*1000)
-    cache_expire: 86400000
-    // cache_expire: 10000
-}
-
 APP.Main = {
 
     view: null,
@@ -26,6 +13,8 @@ APP.Main = {
     init: function () {
         var self = this;
 
+        APP.log('Main.init');
+
         // Remove focus styling after any buttonish item is clicked
         $('html').on('click', 'a.button, a.col, button', function () { $(this).blur(); });
 
@@ -38,6 +27,7 @@ APP.Main = {
         self.view.addAction('show-projects', self.showProjects);
         self.view.addAction('show-project-todo-lists', self.showProjectTodoLists);
         self.view.addAction('save-config', self.saveConfig);
+
         self.header_view.addAction('refresh', self.refresh);
         self.header_view.addAction('search', function (event) {
             window.e = event;
@@ -45,6 +35,7 @@ APP.Main = {
             clearTimeout(self.search_timer);
             self.search_timer = setTimeout(self.search, APP.Config.debounce);
         });
+
         self.footer_view.addAction('settings', self.showConfig);
 
         // Initial Rendering
@@ -55,25 +46,29 @@ APP.Main = {
 
             if ('config' in data) {
 
-                if ('url' in data.config && data.config.url) {
-                    APP.Config.url = data.config.url;
-                } else {
+                APP.Config = data.config;
+
+                if ( ! APP.Config.url ) {
                     self.showConfig();
                     return;
                 }
 
-                if ('user_id' in data.config && data.config.user_id) {
-                    APP.Config.user_id = data.config.user_id;
-                } else {
-                    self.showConfigError('Basecamp user id not found in saved data');
-                    return;
-                }
+                // Debugging mode enabled? If not, proceed to get more data
+                if ( ! APP.Debug.enable(APP.Config.url) ) {
 
-                if ('api_key' in data.config && data.config.api_key) {
-                    APP.Config.api_key = data.config.api_key;
-                } else {
-                    self.showConfigError('Basecamp API key not found in saved data');
-                    return;
+
+                    // Get User ID from a simple page
+                    if ( ! APP.Config.user_id ) {
+                        self.showConfigError('Basecamp user id not found in saved data');
+                        return;
+                    }
+
+                    // Get API Key from settings page
+                    if ( ! APP.Config.api_key ) {
+                        self.showConfigError('Basecamp API key not found in saved data');
+                        return;
+                    }
+
                 }
 
                 self.showProjects();
@@ -102,12 +97,19 @@ APP.Main = {
     saveConfig: function (event) {
         var self = APP.Main,
             url = $('[name="url"]').val(),
+            debug = false,
             matches = url.match(/(^|\s|\/)([^\/]+\.[^\/]+\.([^\/]+)?)(\/|$|\s)/);
 
         event.preventDefault();
         self.view.render({html:'Saving...'});
 
-        if (matches) {
+        // Debugging enabled?
+        if (APP.Debug.enable(url)) {
+            self.refresh();
+            self.showProjects();
+            return;
+        }
+        else if (matches) {
             url = matches[2];
         } else {
             self.showConfigError('Invalid URL, "'+url+'", please try again');
