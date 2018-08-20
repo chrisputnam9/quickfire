@@ -46,15 +46,18 @@
                 <a href='js-show-project-todo-lists' class='col col10 p-all t-ct' data-id="{{id}}"' title='Show Lists'>
                     <div class='col t-xl'>&#9783;</div>
                 </a>
-                <a href='{{url}}' class='col col90 p-all' target='_blank' title='View Project in Basecamp'>
-                    <div class='col col75 t-xl'>{{name}}</div>
+                <a href='{{url}}' class='col col90 p-all' target='_blank' title="Click to view project in Basecamp:&#10;{{name}}&#10;{{#company}}{{name}}{{/company}}">
+                    <div class='col col75 t-xl'>{{#_excerpt}}30,{{name}}{{/_excerpt}}</div>
 
                     <div class='col col25 t-sm t-rt'>
-                        <div class='col m-bt'>{{#company}}{{name}}{{/company}}</div>
+                        <div class='col m-bt'>{{#_excerpt}}15,{{#company}}{{name}}{{/company}}{{/_excerpt}}</div>
                         <div class='col'>{{created-on}}</div>
                     </div>
                 </a><br>
             </div>
+            {{/projects}}
+            {{^projects}}
+            No projects found
             {{/projects}}
         </script>
 
@@ -64,11 +67,11 @@
                 <a href='js-show-projects' class='col col10 p-all t-ct data-project="{{id}}" active' title='Back to Projects'>
                     <div class='col t-xl active'>&#9783;</div>
                 </a>
-                <a href='{{url}}' class='col col90 p-all' target='_blank' title='View Project in Basecamp'>
-                    <div class='col col75 t-xl'>{{name}}</div>
+                <a href='{{url}}' class='col col90 p-all' target='_blank' title="Click to view project in Basecamp:&#10;{{name}}&#10;{{#company}}{{name}}{{/company}}">
+                    <div class='col col75 t-xl'>{{#_excerpt}}30,{{name}}{{/_excerpt}}</div>
 
                     <div class='col col25 t-sm t-rt'>
-                        <div class='col m-bt'>{{#company}}{{name}}{{/company}}</div>
+                        <div class='col m-bt'>{{#_excerpt}}15,{{#company}}{{name}}{{/company}}{{/_excerpt}}</div>
                         <div class='col'>{{created-on}}</div>
                     </div>
                 </a><br>
@@ -77,14 +80,17 @@
             {{#lists}}
                 <div class='col m-bt'>
                     <div class='col col10 p-all'>&nbsp;</div>
-                    <a href='{{url}}' class='col col90 p-all {{#completed}}o-50{{/completed}}' target='_blank' title='View List in Basecamp'>
-                        <div class='col col75'>{{name}}</div>
+                    <a href='{{url}}' class='col col90 p-all {{#completed}}o-50{{/completed}}' target='_blank' title="Click to view list in Basecamp:&#10;{{name}}&#10;">
+                        <div class='col col90'>{{#_excerpt}}45,{{name}}{{/_excerpt}}</div>
 
-                        <div class='col col25 t-rt'>
+                        <div class='col col10 t-rt'>
                             <div class='col'>{{uncompleted-count}}</div>
                         </div>
                     </a><br>
                 </div>
+            {{/lists}}
+            {{^lists}}
+            This project has no lists
             {{/lists}}
         </script>
 
@@ -112,7 +118,7 @@
     <script src='js/config.js'></script>
     <script src='js/data.js'></script>
     <script src='js/debug.js'></script>
-    <script src='js/log.js'></script>
+    <script src='js/helpers.js'></script>
     <script src='js/view-model.js'></script>
 </body>
 </html>

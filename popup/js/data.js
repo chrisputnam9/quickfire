@@ -5,6 +5,7 @@ APP.Data = {
 
     // Clear Data for a type
     clear: function (type) {
+        APP.log('APP.Data.clear:'+type);
         var self = APP.Data,
             type_created = type+'_created';
 
@@ -17,6 +18,7 @@ APP.Data = {
 
     // Get data of a given type, cache, then pass to callback
     get: function (type, callback) {
+        APP.log('APP.Data.get:'+type);
         var self = APP.Data,
             now = new Date(),
             now_stamp = now.getTime(),
@@ -50,22 +52,15 @@ APP.Data = {
                 }
             }
 
-            if (APP.Debug.enable()) {
-                if (type in APP.Debug.data) {
-                    self.fetch_finalize(type, APP.Debug.data[type].slice(0), {}, callback);
-                }
-                else {
-                    throw new Error('Missing debug data - ' + type);
-                }
-            } else {
-                self.fetch(type, callback);
-            }
+            // Storage incomplete or expired, fetch fresh
+            self.fetch(type, callback);
 
         });
     },
 
     // Get data of a given type, keyed by an ID, cache, then pass to callback
     getById: function (type, callback, id) {
+        APP.log('APP.Data.getById:'+type+','+id);
         var self = APP.Data,
             now = new Date(),
             now_stamp = now.getTime(),
@@ -115,28 +110,25 @@ APP.Data = {
                 }
             }
 
-            // Storage incomplete or expired, fetch via Ajax (or from debug data)
-            if (APP.Debug.enable()) {
-                if (type in APP.Debug.data && id in APP.Debug.data[type]) {
-                    self.fetch_finalize(type, Object.create(APP.Debug.data[type][id]), {'id':id}, callback);
-                }
-                else {
-                    throw new Error('Missing debug data - ' + type + ':' + id);
-                }
-            } else {
-                self.fetch(type, callback, {'id':id});
-            }
+            // Storage incomplete or expired, fetch fresh
+            self.fetch(type, callback, {'id':id});
 
         });
     },
 
     // Fetch Methods for various types
     fetch: function (type, callback, params) {
+        APP.log('APP.Data.fetch:'+type);
         var self = APP.Data;
 
         params = (typeof params == 'undefined') ? {} : params;
 
-        $.ajax({
+        // Use debug data?
+        if (APP.Debug.enable()) {
+            return APP.Debug.fetch(type, callback, params);
+        }
+
+        return $.ajax({
             url: self.fetch_url[type](params),
             dataType: 'xml'
         })
@@ -152,34 +144,6 @@ APP.Data = {
         });
 
     },
-
-        // Finalize - sort, save, callback for fetched data
-        fetch_finalize: function (type, type_data, params, callback) {
-            var self = APP.Data,
-                type_created = type+'_created';
-                now = new Date(),
-                now_stamp = now.getTime();
-
-            self.sort[type](type_data);
-
-            if ('id' in params) {
-                self.data[type][params.id] = type_data;
-                self.data[type_created][params.id] = now_stamp;
-            } else {
-                // Update working data
-                self.data[type] = type_data;
-                self.data[type_created] = now_stamp;
-            }
-
-            // Update local storage
-            chrome.storage.local.set(self.data);
-
-            if ('id' in params) {
-                callback(self.data[type][params.id], type);
-            } else {
-                callback(self.data, type);
-            }
-        },
 
         // Fetch/Ajax URLs for each type
         fetch_url: {
@@ -258,10 +222,37 @@ APP.Data = {
             }
         },
 
+        // Finalize - sort, save, callback for fetched data
+        fetch_finalize: function (type, type_data, params, callback) {
+            var self = APP.Data,
+                type_created = type+'_created';
+                now = new Date(),
+                now_stamp = now.getTime();
+
+            self.sort[type](type_data);
+
+            if ('id' in params) {
+                self.data[type][params.id] = type_data;
+                self.data[type_created][params.id] = now_stamp;
+            } else {
+                // Update working data
+                self.data[type] = type_data;
+                self.data[type_created] = now_stamp;
+            }
+
+            // Update local storage
+            chrome.storage.local.set(self.data);
+
+            if ('id' in params) {
+                callback(self.data[type][params.id], type);
+            } else {
+                callback(self.data, type);
+            }
+        },
+
         sort: {
             'projects': function (data) {
-                APP.log('Sorting projects: ');
-                APP.log(data);
+                APP.log('App.Data.sort:projects');
 
                 data.sort(function (a,b) {
                     if (a.name < b.name) return -11;
@@ -272,8 +263,7 @@ APP.Data = {
                 return data;
             },
             'project-todo-lists': function (data) {
-                APP.log('Sorting project-todo-lists: ');
-                APP.log(data);
+                APP.log('App.Data.sort:project-todo-lists');
 
                 data.lists.sort(function (a,b) {
                     if (a.completed && ! b.completed) return 1;
@@ -287,6 +277,7 @@ APP.Data = {
 
     // Filter data by search text
     filter: function (type, search, callback) {
+        APP.log('APP.Data.filter:'+type+','+search);
         var self = APP.Data,
             matches;
 
