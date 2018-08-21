@@ -21,7 +21,7 @@ APP.Debug = {
                 self.enabled = true;
 
                 // Set up letters for random names
-                self.letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ   ';
+                self.letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()1234567890-+_={}[]\\|"\';:,<.>/?   ';
                 self.letters+= self.letters + self.letters;
                 self.letters = self.letters.split("");
 
@@ -66,7 +66,7 @@ APP.Debug = {
                     "created-on": "2000-01-01",
                     "id": id,
                     "last-changed-on": "2000-01-01T00:00:00Z",
-                    "name": 'Project ' + name,
+                    "name": 'Project&nbsp;&nbsp;&amp; ' + name,
                     "start-page": "todos",
                     "url": "http://example.com/#" + name
                 });

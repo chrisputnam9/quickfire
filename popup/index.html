@@ -47,10 +47,10 @@
                     <div class='col t-xl'>&#9783;</div>
                 </a>
                 <a href='{{url}}' class='col col90 p-all' target='_blank' title="Click to view project in Basecamp:&#10;{{name}}&#10;{{#company}}{{name}}{{/company}}">
-                    <div class='col col75 t-xl'>{{#_excerpt}}30,{{name}}{{/_excerpt}}</div>
+                    <div class='col col75 t-xl ellipsis'>{{name}}</div>
 
                     <div class='col col25 t-sm t-rt'>
-                        <div class='col m-bt'>{{#_excerpt}}15,{{#company}}{{name}}{{/company}}{{/_excerpt}}</div>
+                        <div class='col m-bt ellipsis'>{{#company}}{{name}}{{/company}}</div>
                         <div class='col'>{{created-on}}</div>
                     </div>
                 </a><br>
@@ -68,10 +68,10 @@
                     <div class='col t-xl active'>&#9783;</div>
                 </a>
                 <a href='{{url}}' class='col col90 p-all' target='_blank' title="Click to view project in Basecamp:&#10;{{name}}&#10;{{#company}}{{name}}{{/company}}">
-                    <div class='col col75 t-xl'>{{#_excerpt}}30,{{name}}{{/_excerpt}}</div>
+                    <div class='col col75 t-xl ellipsis'>{{name}}</div>
 
                     <div class='col col25 t-sm t-rt'>
-                        <div class='col m-bt'>{{#_excerpt}}15,{{#company}}{{name}}{{/company}}{{/_excerpt}}</div>
+                        <div class='col m-bt ellipsis'>{{#company}}{{name}}{{/company}}</div>
                         <div class='col'>{{created-on}}</div>
                     </div>
                 </a><br>
@@ -81,9 +81,9 @@
                 <div class='col m-bt'>
                     <div class='col col10 p-all'>&nbsp;</div>
                     <a href='{{url}}' class='col col90 p-all {{#completed}}o-50{{/completed}}' target='_blank' title="Click to view list in Basecamp:&#10;{{name}}&#10;">
-                        <div class='col col90'>{{#_excerpt}}45,{{name}}{{/_excerpt}}</div>
+                        <div class='col col90 ellipsis'>{{name}}</div>
 
-                        <div class='col col10 t-rt'>
+                        <div class='col col10 t-rt ellipsis'>
                             <div class='col'>{{uncompleted-count}}</div>
                         </div>
                     </a><br>

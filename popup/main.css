@@ -4,6 +4,9 @@
 }
 
 /* General */
+* {
+    font-family: "Helvetica", "sans-serif"
+}
 a {
     color: #8989a7;
 }
@@ -36,7 +39,6 @@ a.button {
     min-width: 30px;
     padding: 5px;
     font-size: 1.4em;
-    font-weight: bold;
     text-align: center;
 }
 button:hover,
@@ -79,6 +81,7 @@ a.col:focus {
 
     width: 100%;
 }
+.debug .col {border: 1px solid red}
 .col5  { width: 5%; }
 .col10 { width: 10%; }
 .col15 { width: 15%; }
@@ -150,6 +153,13 @@ a.col:focus {
 }
 
 /* Helpers */
+.ellipsis {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow:ellipsis;
+    padding-right: .2em;
+}
+
 .o-25 {opacity: .25}
 .o-50 {opacity: .50}
 .o-75 {opacity: .75}
@@ -174,7 +184,7 @@ a.col:focus {
 .m-bt {margin-bottom: 5px}
 
 small,
-.t-xs {font-size: .6em; line-height: 0.6em;}
-.t-sm {font-size: 0.8em; line-height: 0.8em;}
-.t-lg {font-size: 1.2em; line-height: 1.2em;}
-.t-xl {font-size: 1.4em; line-height: 1.4em;}
+.t-xs {font-size: .6em; line-height: 0.8em;}
+.t-sm {font-size: 0.8em; line-height: 1.0em;}
+.t-lg {font-size: 1.2em; line-height: 1.4em;}
+.t-xl {font-size: 1.4em; line-height: 1.6em;}

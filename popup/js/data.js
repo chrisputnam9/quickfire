@@ -169,18 +169,18 @@ APP.Data = {
 
                 $xml.find('projects project').each(function () {
                     var $project = $(this),
-                        id = parseInt($project.find('id').html()),
+                        id = parseInt($project.find('id').ht()),
                         $company = $project.find('company'),
                         project = {
                             'id': id,
                             'url': 'https://'+APP.Config.url+'/projects/'+id,
-                            'created-on': $project.find('created-on').html(),
-                            'last-changed-on': $project.find('last-changed-on').html(),
-                            'name': $project.find('name').html(),
-                            'start-page': $project.find('start-page').html(),
+                            'created-on': $project.find('created-on').ht(),
+                            'last-changed-on': $project.find('last-changed-on').ht(),
+                            'name': $project.find('name').ht(),
+                            'start-page': $project.find('start-page').ht(),
                             'company': {
-                                'id': parseInt($company.find('id').html()),
-                                'name': $company.find('name').html()
+                                'id': parseInt($company.find('id').ht()),
+                                'name': $company.find('name').ht()
                             }
                         };
                     projects.push(project);
@@ -201,16 +201,16 @@ APP.Data = {
 
                 $xml.find('todo-lists todo-list').each(function () {
                     var $list = $(this),
-                        id = parseInt($list.find('id').html()),
+                        id = parseInt($list.find('id').ht()),
                         list = {
                             'id': id,
                             'url': 'https://'+APP.Config.url+'/todo_lists/'+id,
-                            'name': $list.find('name').html(),
-                            'description': $list.find('description').html(),
-                            'position': parseInt($list.find('position').html()),
-                            'completed': $list.find('completed').html() == 'true',
-                            'uncompleted-count': parseInt($list.find('uncompleted-count').html()),
-                            'completed-count': parseInt($list.find('completed-count').html()),
+                            'name': $list.find('name').ht(),
+                            'description': $list.find('description').ht(),
+                            'position': parseInt($list.find('position').ht()),
+                            'completed': $list.find('completed').ht() == 'true',
+                            'uncompleted-count': parseInt($list.find('uncompleted-count').ht()),
+                            'completed-count': parseInt($list.find('completed-count').ht()),
                         };
                     lists.push(list);
                 });
@@ -255,8 +255,20 @@ APP.Data = {
                 APP.log('App.Data.sort:projects');
 
                 data.sort(function (a,b) {
-                    if (a.name < b.name) return -11;
-                    if (a.name > b.name) return 1;
+                    var a_name   = a.name.trim(),
+                        a_name_l = a_name.toLowerCase(),
+                        b_name   = b.name.trim(),
+                        b_name_l = b_name.toLowerCase();
+
+                    // First compare lowercase
+                    if (a_name_l < b_name_l) return -1;
+                    if (a_name_l > b_name_l) return 1;
+                    
+                    // If equal, compare originals
+                    if (a_name < b_name) return -1;
+                    if (a_name > b_name) return 1;
+
+                    // Totally equal
                     return 0;
                 });
 

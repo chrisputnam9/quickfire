@@ -1,4 +1,20 @@
 /**
+ * escapeHTML method
+ *  - Use Mustache escape method
+ *  - attempt to avoid double-escaping
+ */
+var original_mustache_escape = Mustache.escape;
+APP.escapeHTML = function (text) {
+    var el = document.createElement('span');
+
+    // First, "unescape" any special sequences with DOM
+    el.innerHTML = text;
+    text = el.innerText;
+
+    return original_mustache_escape(text);
+}
+
+/**
  * Logging method - based on config setting
  * Update via console (APP.Config.verbose = true)
  *  then save settings page to cache locally
@@ -55,4 +71,11 @@ Array.prototype.shuffle = function () {
   }
 
   return this;
+}
+
+/**
+ * jQuery method - get trimmed html contents
+ */
+jQuery.fn.ht = function () {
+    return $(this).html().trim();
 }
