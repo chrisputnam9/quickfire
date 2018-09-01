@@ -11,7 +11,7 @@ APP.Config = {
 
     // 1 Day (24*60*60*1000)
     cache_expire: 86400000,
-    // cache_expire: 10000
+    // cache_expire: 5000,
     
     verbose: false
 }

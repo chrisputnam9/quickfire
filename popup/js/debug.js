@@ -37,12 +37,12 @@ APP.Debug = {
     fetch: function (type, callback, params) {
         var self = APP.Debug;
         APP.log('DEBUG: APP.Debug.fetch:'+type);
-        APP.log('DEBUG: artificial delay of .5 seconds...');
+        APP.log('DEBUG: artificial delay of 1 seconds...');
 
         return setTimeout(function __use_debug_data() {
             type_data = self.generate[type](params);
             APP.Data.fetch_finalize(type, type_data, params, callback);
-        }, 500);
+        }, 1000);
     },
 
     /**
