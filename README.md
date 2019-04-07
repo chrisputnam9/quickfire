@@ -5,7 +5,7 @@ Helps you get your fires burning faster in Basecamp Classic
 ## Troubleshooting
 For most issues, double-check:
 
- 1. You are logged in to Basecamp
+ 1. You are logged in to Basecamp Classic
  2. The correct URL is entered in the extension settings page
    Click the button in the lower right to get to the settings page if it's not open when you click the extension)
 
