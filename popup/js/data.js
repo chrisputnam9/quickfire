@@ -5,6 +5,7 @@ APP.Data = {
 
     // Clear Data for a type
     clear: function (type) {
+        APP.log('APP.Data.clear:'+type);
         var self = APP.Data,
             type_created = type+'_created';
 
@@ -17,6 +18,7 @@ APP.Data = {
 
     // Get data of a given type, cache, then pass to callback
     get: function (type, callback) {
+        APP.log('APP.Data.get:'+type);
         var self = APP.Data,
             now = new Date(),
             now_stamp = now.getTime(),
@@ -50,22 +52,15 @@ APP.Data = {
                 }
             }
 
-            if (APP.Debug.enable()) {
-                if (type in APP.Debug.data) {
-                    self.fetch_finalize(type, APP.Debug.data[type].slice(0), {}, callback);
-                }
-                else {
-                    throw new Error('Missing debug data - ' + type);
-                }
-            } else {
-                self.fetch(type, callback);
-            }
+            // Storage incomplete or expired, fetch fresh
+            self.fetch(type, callback);
 
         });
     },
 
     // Get data of a given type, keyed by an ID, cache, then pass to callback
     getById: function (type, callback, id) {
+        APP.log('APP.Data.getById:'+type+','+id);
         var self = APP.Data,
             now = new Date(),
             now_stamp = now.getTime(),
@@ -115,28 +110,25 @@ APP.Data = {
                 }
             }
 
-            // Storage incomplete or expired, fetch via Ajax (or from debug data)
-            if (APP.Debug.enable()) {
-                if (type in APP.Debug.data && id in APP.Debug.data[type]) {
-                    self.fetch_finalize(type, Object.create(APP.Debug.data[type][id]), {'id':id}, callback);
-                }
-                else {
-                    throw new Error('Missing debug data - ' + type + ':' + id);
-                }
-            } else {
-                self.fetch(type, callback, {'id':id});
-            }
+            // Storage incomplete or expired, fetch fresh
+            self.fetch(type, callback, {'id':id});
 
         });
     },
 
     // Fetch Methods for various types
     fetch: function (type, callback, params) {
+        APP.log('APP.Data.fetch:'+type);
         var self = APP.Data;
 
         params = (typeof params == 'undefined') ? {} : params;
 
-        $.ajax({
+        // Use debug data?
+        if (APP.Debug.enable()) {
+            return APP.Debug.fetch(type, callback, params);
+        }
+
+        return $.ajax({
             url: self.fetch_url[type](params),
             dataType: 'xml'
         })
@@ -152,6 +144,83 @@ APP.Data = {
         });
 
     },
+
+        // Fetch/Ajax URLs for each type
+        fetch_url: {
+            _: function () {
+                return 'https://'+APP.Config.api_key+':X@'+APP.Config.url;
+            },
+            'projects': function () {
+                return APP.Data.fetch_url._()+'/projects.xml';
+            },
+            'project-todo-lists': function (params) {
+                if ( ! ('id' in params) ) {
+                    throw new Error('Missing ID - required to fetch project todo lists');
+                }
+                return APP.Data.fetch_url._()+'/projects/'+params.id+'/todo_lists.xml';
+            },
+        },
+
+        // Fetch/Ajax Data parsing for each type
+        fetch_parse: {
+            'projects': function ($xml) {
+                var self = APP.Data,
+                    projects = [];
+
+                $xml.find('projects project').each(function () {
+                    var $project = $(this),
+                        id = parseInt($project.find('id').ht()),
+                        $company = $project.find('company'),
+                        project = {
+                            'id': id,
+                            'url': 'https://'+APP.Config.url+'/projects/'+id,
+                            'created-on': $project.find('created-on').ht(),
+                            'last-changed-on': $project.find('last-changed-on').ht(),
+                            'name': $project.find('name').ht(),
+                            'start-page': $project.find('start-page').ht(),
+                            'company': {
+                                'id': parseInt($company.find('id').ht()),
+                                'name': $company.find('name').ht()
+                            }
+                        };
+                    projects.push(project);
+                });
+
+                return projects;
+            },
+            'project-todo-lists': function ($xml, params) {
+                var self = APP.Data,
+                    lists = [],
+                    project_id;
+
+                if ( ! ('id' in params) ) {
+                    throw new Error('Missing ID - required to fetch project todo lists');
+                }
+
+                project_id = params.id;
+
+                $xml.find('todo-lists todo-list').each(function () {
+                    var $list = $(this),
+                        id = parseInt($list.find('id').ht()),
+                        list = {
+                            'id': id,
+                            'url': 'https://'+APP.Config.url+'/todo_lists/'+id,
+                            'name': $list.find('name').ht(),
+                            'description': $list.find('description').ht(),
+                            'position': parseInt($list.find('position').ht()),
+                            'completed': $list.find('completed').ht() == 'true',
+                            'uncompleted-count': parseInt($list.find('uncompleted-count').ht()),
+                            'completed-count': parseInt($list.find('completed-count').ht()),
+                        };
+                    lists.push(list);
+                });
+
+                return {
+                    'project': self.data['projects'].filter(function (project) { return project.id == project_id}),
+                    'lists': lists
+                };
+            }
+        },
 
         // Finalize - sort, save, callback for fetched data
         fetch_finalize: function (type, type_data, params, callback) {
@@ -181,99 +250,32 @@ APP.Data = {
             }
         },
 
-        // Fetch/Ajax URLs for each type
-        fetch_url: {
-            _: function () {
-                return 'https://'+APP.Config.api_key+':X@'+APP.Config.url;
-            },
-            'projects': function () {
-                return APP.Data.fetch_url._()+'/projects.xml';
-            },
-            'project-todo-lists': function (params) {
-                if ( ! ('id' in params) ) {
-                    throw new Error('Missing ID - required to fetch project todo lists');
-                }
-                return APP.Data.fetch_url._()+'/projects/'+params.id+'/todo_lists.xml';
-            },
-        },
-
-        // Fetch/Ajax Data parsing for each type
-        fetch_parse: {
-            'projects': function ($xml) {
-                var self = APP.Data,
-                    projects = [];
-
-                $xml.find('projects project').each(function () {
-                    var $project = $(this),
-                        id = parseInt($project.find('id').html()),
-                        $company = $project.find('company'),
-                        project = {
-                            'id': id,
-                            'url': 'https://'+APP.Config.url+'/projects/'+id,
-                            'created-on': $project.find('created-on').html(),
-                            'last-changed-on': $project.find('last-changed-on').html(),
-                            'name': $project.find('name').html(),
-                            'start-page': $project.find('start-page').html(),
-                            'company': {
-                                'id': parseInt($company.find('id').html()),
-                                'name': $company.find('name').html()
-                            }
-                        };
-                    projects.push(project);
-                });
-
-                return projects;
-            },
-            'project-todo-lists': function ($xml, params) {
-                var self = APP.Data,
-                    lists = [],
-                    project_id;
-
-                if ( ! ('id' in params) ) {
-                    throw new Error('Missing ID - required to fetch project todo lists');
-                }
-
-                project_id = params.id;
-
-                $xml.find('todo-lists todo-list').each(function () {
-                    var $list = $(this),
-                        id = parseInt($list.find('id').html()),
-                        list = {
-                            'id': id,
-                            'url': 'https://'+APP.Config.url+'/todo_lists/'+id,
-                            'name': $list.find('name').html(),
-                            'description': $list.find('description').html(),
-                            'position': parseInt($list.find('position').html()),
-                            'completed': $list.find('completed').html() == 'true',
-                            'uncompleted-count': parseInt($list.find('uncompleted-count').html()),
-                            'completed-count': parseInt($list.find('completed-count').html()),
-                        };
-                    lists.push(list);
-                });
-
-                return {
-                    'project': self.data['projects'].filter(function (project) { return project.id == project_id}),
-                    'lists': lists
-                };
-            }
-        },
-
         sort: {
             'projects': function (data) {
-                APP.log('Sorting projects: ');
-                APP.log(data);
+                APP.log('App.Data.sort:projects');
 
                 data.sort(function (a,b) {
-                    if (a.name < b.name) return -11;
-                    if (a.name > b.name) return 1;
+                    var a_name   = a.name.trim(),
+                        a_name_l = a_name.toLowerCase(),
+                        b_name   = b.name.trim(),
+                        b_name_l = b_name.toLowerCase();
+
+                    // First compare lowercase
+                    if (a_name_l < b_name_l) return -1;
+                    if (a_name_l > b_name_l) return 1;
+                    
+                    // If equal, compare originals
+                    if (a_name < b_name) return -1;
+                    if (a_name > b_name) return 1;
+
+                    // Totally equal
                     return 0;
                 });
 
                 return data;
             },
             'project-todo-lists': function (data) {
-                APP.log('Sorting project-todo-lists: ');
-                APP.log(data);
+                APP.log('App.Data.sort:project-todo-lists');
 
                 data.lists.sort(function (a,b) {
                     if (a.completed && ! b.completed) return 1;
@@ -287,6 +289,7 @@ APP.Data = {
 
     // Filter data by search text
     filter: function (type, search, callback) {
+        APP.log('APP.Data.filter:'+type+','+search);
         var self = APP.Data,
             matches;
 

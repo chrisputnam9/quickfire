@@ -26,6 +26,7 @@ APP.ViewModel = function ($el) {
         APP.log(data);
 
         if (type in instance.templates) {
+            instance.setupData(data);
             var html = Mustache.render(instance.templates[type], data);
             instance.$el.html(html);
             instance.trigger('render', {
@@ -37,10 +38,30 @@ APP.ViewModel = function ($el) {
         return false
     };
 
+        /**
+        * Set up methods for template use
+        */
+        instance.setupData = function (data) {
+            data._excerpt = function () { return instance._excerpt }
+        };
+
+        instance._excerpt = function(text, render) {
+            text = render(text);
+            if (matches = text.match(/^(\d+),(.*)$/)) {
+                text = matches[2].substr(0, Math.max(matches[1]-1,0)).trim();
+                if (text.length < matches[2].length) {
+                    text+='&#8230;'
+                }
+                return text;
+            } else {
+                return "<b>ERROR:</b> _excerpt requires: length,text";
+            }
+        };
+
     // Render loading message
     instance.renderLoading = function () {
         instance.render({html:'Loading...'});
-    }
+    };
 
     // Register event listener
     instance.on = function (event, callback) {

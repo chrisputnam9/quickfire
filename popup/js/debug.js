@@ -4,217 +4,142 @@
 APP.Debug = {
 
     enabled: false,
+    letters: null,
 
     // Enable debugging, if url is set to some variation of 'debug'
     enable: function (url) {
         var self = APP.Debug;
 
-        if (typeof url == 'undefined') {
-            if (self.enabled) {
-                url = 'debug';
-            } else {
-                url = '';
+        // Checking if already enabled or based on url entry:
+        if (typeof url != 'undefined') {
+
+            // Enable (or not) based on URL
+            self.enabled = false;
+            if (url.toLowerCase() == 'debug') {
+                APP.log('DEBUG: ENABLED');
+
+                self.enabled = true;
+
+                // Set up letters for random names
+                self.letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()1234567890-+_={}[]\\|"\';:,<.>/?   ';
+                self.letters+= self.letters + self.letters;
+                self.letters = self.letters.split("");
+
+                APP.Config.url = url;
+                chrome.storage.local.set({config: APP.Config});
             }
-        }
 
-        self.enabled = false;
-
-        if (url.toLowerCase() == 'debug') {
-
-            APP.log('DEBUG DATA ENABLED');
-
-            self.enabled = true;
-
-            APP.Config.url = url;
-            chrome.storage.local.set({config: APP.Config});
-
-            // APP.Data.data = Object.create(self.data);
         }
 
         return self.enabled;
+    },
+
+    fetch: function (type, callback, params) {
+        var self = APP.Debug;
+        APP.log('DEBUG: APP.Debug.fetch:'+type);
+        APP.log('DEBUG: artificial delay of 1 seconds...');
+
+        return setTimeout(function __use_debug_data() {
+            type_data = self.generate[type](params);
+            APP.Data.fetch_finalize(type, type_data, params, callback);
+        }, 1000);
+    },
+
+    /**
+     * Generate random data for debugging/testing/development
+     */
+    generate: {
+        'projects': function (params) {
+            var self = APP.Debug,
+                project_count = APP.random(0,10),
+                projects = [],
+                id, name;
+
+            for (p=0;p<project_count;p++) {
+                id = self.randomID(),
+                name = self.randomName();
+                projects.push({
+                    "company": {
+                        "id": self.randomID(),
+                        "name": self.randomName() + ' Inc.'
+                    },
+                    "created-on": "2000-01-01",
+                    "id": id,
+                    "last-changed-on": "2000-01-01T00:00:00Z",
+                    "name": 'Project&nbsp;&nbsp;&amp; ' + name,
+                    "start-page": "todos",
+                    "url": "http://example.com/#" + name
+                });
+            }
+
+            return projects;
+        },
+
+        'project-todo-lists': function (params) {
+            var self = APP.Debug,
+                list_count = APP.random(0,10),
+                lists = [],
+                project_id = params.id,
+                name,complete_count,uncomplete_count;
+
+                for (l=0;l<list_count;l++) {
+                    name = self.randomName();
+                    complete_count = APP.random(0,10);
+                    uncomplete_count = APP.random(0,10);
+
+                    lists.push({
+                        "id": self.randomID(),
+                        "url": "http://example.com/#" + name,
+                        "name": 'List ' + name,
+                        "description": "Lorem Ipsum Debugi",
+                        "position": APP.random(1,list_count),
+                        "completed": (uncomplete_count == 0),
+                        "uncompleted-count": uncomplete_count,
+                        "completed-count": complete_count
+                    });
+                }
+
+                return {
+                    'project': APP.Data.data['projects']
+                        .filter(function (project) {
+                            return project.id == project_id
+                        }),
+                    'lists': lists
+                };
+        }
+    },
+
+    /**
+     * Generate a random name based on letters
+     * either call with (min,max) - inclusive
+     * or just (min) - inclusive, will assume max = letters length
+     * or () = assume min 0, max = letters length
+     */
+    randomName: function (min, max) {
+        var self = APP.Debug;
+        
+        if (typeof max == 'undefined') {
+            max = self.letters.length;
+        }
+        if (typeof min == 'undefined') {
+            min = 0;
+        }
+
+        return self.letters
+            .shuffle()
+            .slice( 0,
+                APP.random( min, max - 1)
+            )
+            .join("")
+        ;
 
     },
 
-    // Debugging data to be used
-    data: {
-        "projects": [
-            {
-                "company": {
-                    "id": 3773718,
-                    "name": "Testco Incorporated"
-                },
-                "created-on": "2018-05-19",
-                "id": 14203098,
-                "last-changed-on": "2018-08-07T02:08:51Z",
-                "name": "Test Project",
-                "start-page": "todos",
-                "url": "https://putnam1.basecamphq.com/projects/14203098"
-            },
-            {
-                "company": {
-                    "id": 3773718,
-                    "name": "Alphabet Testers"
-                },
-                "created-on": "2018-05-19",
-                "id": 10000000,
-                "last-changed-on": "2018-08-07T02:08:51Z",
-                "name": "Integration",
-                "start-page": "todos",
-                "url": "https://putnam1.basecamphq.com/projects/14203098"
-            },
-            {
-                "company": {
-                    "id": 3773718,
-                    "name": "Testco Incorporated"
-                },
-                "created-on": "2018-05-19",
-                "id": 20000000,
-                "last-changed-on": "2018-08-07T02:08:51Z",
-                "name": "_Old Project",
-                "start-page": "todos",
-                "url": "https://putnam1.basecamphq.com/projects/14203098"
-            }
-        ],
-        "projects_created": 9999999999999,
-        "project-todo-lists": {
-            "20000000": {
-                "project": [
-                    {
-                        "company": {
-                            "id": 3773718,
-                            "name": "Testco Incorporated"
-                        },
-                        "created-on": "2018-05-19",
-                        "id": 20000000,
-                        "last-changed-on": "2018-08-07T02:08:51Z",
-                        "name": "_Old Project",
-                        "start-page": "todos",
-                        "url": "https://putnam1.basecamphq.com/projects/14203098"
-                    }
-                ],
-                "lists": [
-                    {
-                        "id": 30026062,
-                        "url": "https://putnam1.basecamphq.com/todo_lists/30026062",
-                        "name": "Such an old list",
-                        "description": "",
-                        "position": 2,
-                        "completed": false,
-                        "uncompleted-count": 4,
-                        "completed-count": 0
-                    },
-                    {
-                        "id": 29928724,
-                        "url": "https://putnam1.basecamphq.com/todo_lists/29928724",
-                        "name": "Methusala",
-                        "description": "",
-                        "position": 3,
-                        "completed": false,
-                        "uncompleted-count": 3,
-                        "completed-count": 0
-                    }
-,
-                    {
-                        "id": 29928724,
-                        "url": "https://putnam1.basecamphq.com/todo_lists/29928724",
-                        "name": "Even older list",
-                        "description": "",
-                        "position": 4,
-                        "completed": false,
-                        "uncompleted-count": 3,
-                        "completed-count": 0
-                    }
-                ]
-            },
-            "10000000": {
-                "project": [
-                    {
-                        "company": {
-                            "id": 3773718,
-                            "name": "Alphabet Testers"
-                        },
-                        "created-on": "2018-05-19",
-                        "id": 10000000,
-                        "last-changed-on": "2018-08-07T02:08:51Z",
-                        "name": "Integration",
-                        "start-page": "todos",
-                        "url": "https://putnam1.basecamphq.com/projects/14203098"
-                    }
-                ],
-                "lists": [
-                    {
-                        "id": 30026062,
-                        "url": "https://putnam1.basecamphq.com/todo_lists/30026062",
-                        "name": "Test Once",
-                        "description": "",
-                        "position": 2,
-                        "completed": false,
-                        "uncompleted-count": 4,
-                        "completed-count": 0
-                    },
-                    {
-                        "id": 29928724,
-                        "url": "https://putnam1.basecamphq.com/todo_lists/29928724",
-                        "name": "Test Twice",
-                        "description": "",
-                        "position": 3,
-                        "completed": false,
-                        "uncompleted-count": 3,
-                        "completed-count": 0
-                    }
-                ]
-            },
-            "14203098": {
-                "project": [
-                    {
-                        "company": {
-                            "id": 3773718,
-                            "name": "Testco Incorporated"
-                        },
-                        "created-on": "2018-05-19",
-                        "id": 14203098,
-                        "last-changed-on": "2018-08-07T02:08:51Z",
-                        "name": "Test Project",
-                        "start-page": "todos",
-                        "url": "https://putnam1.basecamphq.com/projects/14203098"
-                    }
-                ],
-                "lists": [
-                    {
-                        "id": 30026062,
-                        "url": "https://putnam1.basecamphq.com/todo_lists/30026062",
-                        "name": "Home Improvement",
-                        "description": "",
-                        "position": 2,
-                        "completed": false,
-                        "uncompleted-count": 4,
-                        "completed-count": 0
-                    },
-                    {
-                        "id": 29928724,
-                        "url": "https://putnam1.basecamphq.com/todo_lists/29928724",
-                        "name": "Test List A",
-                        "description": "",
-                        "position": 3,
-                        "completed": false,
-                        "uncompleted-count": 3,
-                        "completed-count": 0
-                    },
-                    {
-                        "id": 30041823,
-                        "url": "https://putnam1.basecamphq.com/todo_lists/30041823",
-                        "name": "completed list",
-                        "description": "",
-                        "position": 1,
-                        "completed": true,
-                        "uncompleted-count": 0,
-                        "completed-count": 1
-                    }
-                ]
-            }
-        },
-        "project-todo-lists_created": {
-            "14203098": 9999999999999
-        }
+    /**
+     * Generate random ID
+     */
+    randomID: function () {
+        return APP.random(1000000, 9999999);
     }
+
 }

@@ -15,6 +15,9 @@ APP.Main = {
 
         APP.log('Main.init');
 
+        // Custom escaping for Mustache
+        Mustache.escape = APP.escapeHTML;
+
         // Remove focus styling after any buttonish item is clicked
         $('html').on('click', 'a.button, a.col, button', function () { $(this).blur(); });
 
