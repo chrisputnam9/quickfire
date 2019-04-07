@@ -1,7 +1,7 @@
 {
     "name": "QuickFire for Basecamp Classic",
-    "version": "0.3",
-    "description": "Add features to Basecamp Classic",
+    "version": "0.4.0",
+    "description": "Helps you get your fires burning faster in Basecamp Classic",
     "icons": {
         "16": "img/logo_16.png",
         "32": "img/logo_32.png",
